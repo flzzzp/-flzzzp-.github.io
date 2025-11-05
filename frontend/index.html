@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>联系人管理系统 - MySQL持久化版</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --success-color: #1cc88a;
+            --danger-color: #e74a3b;
+            --warning-color: #f6c23e;
+            --info-color: #36b9cc;
+            --bg-color: #f8f9fc;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e3e6f0;
+            --header-bg: linear-gradient(135deg, #4e73df, #2a4cb3);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            padding-top: 20px;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        /* 日间主题（橙黄色） */
+        .day-theme {
+            --primary-color: #ff9800;
+            --success-color: #4caf50;
+            --danger-color: #f44336;
+            --warning-color: #ffc107;
+            --info-color: #00bcd4;
+            --bg-color: #fff8e1;
+            --card-bg: #ffffff;
+            --text-color: #5d4037;
+            --border-color: #ffd54f;
+            --header-bg: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        /* 夜间主题（深蓝色） */
+        .night-theme {
+            --primary-color: #2196f3;
+            --success-color: #4caf50;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --info-color: #00bcd4;
+            --bg-color: #0d1b2a;
+            --card-bg: #1b263b;
+            --text-color: #e0e1dd;
+            --border-color: #415a77;
+            --header-bg: linear-gradient(135deg, #1b263b, #0d1b2a);
+        }
+
+        .header {
+            background: var(--header-bg);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 700;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .contact-item {
+            border-left: 4px solid transparent;
+            transition: all 0.3s;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+        }
+
+        .contact-item:hover {
+            background-color: var(--bg-color);
+            border-left-color: var(--primary-color);
+            transform: translateX(5px);
+        }
+
+        .contact-actions {
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .contact-item:hover .contact-actions {
+            opacity: 1;
+        }
+
+        .btn-action {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-action:hover {
+            transform: scale(1.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-color);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            color: var(--border-color);
+        }
+
+        .stats-card {
+            border-left: 4px solid;
+            transition: transform 0.3s;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stats-card.primary {
+            border-left-color: var(--primary-color);
+        }
+
+        .stats-card.success {
+            border-left-color: var(--success-color);
+        }
+
+        .stats-card.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .stats-card.info {
+            border-left-color: var(--info-color);
+        }
+
+        .form-control {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .alert {
+            border: none;
+            border-radius: 10px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1055;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border-radius: 0 0 5px 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            border: 1px solid var(--border-color);
+        }
+
+        .search-result-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+            color: var(--text-color);
+        }
+
+        .search-result-item:hover {
+            background: var(--bg-color);
+        }
+
+        .share-badge {
+            background: var(--info-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: 5px;
+        }
+
+        /* 主题切换按钮样式 */
+        .theme-toggle {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: var(--primary-color);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+        }
+
+        .theme-toggle::before {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            transition: all 0.3s;
+            left: 3px;
+        }
+
+        .theme-toggle.day::before {
+            transform: translateX(0);
+            background: #ffc107;
+        }
+
+        .theme-toggle.night::before {
+            transform: translateX(30px);
+            background: #bbdefb;
+        }
+
+        .theme-toggle i {
+            font-size: 14px;
+            color: white;
+            z-index: 1;
+        }
+
+        .theme-toggle .fa-sun {
+            margin-right: auto;
+        }
+
+        .theme-toggle .fa-moon {
+            margin-left: auto;
+        }
+
+        @media (max-width: 768px) {
+            .contact-actions {
+                opacity: 1;
+                margin-top: 10px;
+            }
+
+            .contact-item:hover {
+                transform: none;
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .search-container {
+                margin-top: 10px;
+                width: 100%;
+            }
+
+            .theme-toggle {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body class="day-theme">
+    <div class="container">
+        <!-- 页面标题和统计信息 -->
+        <div class="header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-address-book me-2"></i>联系人管理系统</h1>
+                    <p class="mb-0">数据已持久化到MySQL数据库</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex align-items-center justify-content-end flex-wrap">
+                        <div class="me-3">
+                            <i class="fas fa-circle text-success me-1"></i>
+                            <span id="connectionStatus">已连接</span>
+                        </div>
+                        <div class="theme-toggle-container">
+                            <span class="me-2">主题:</span>
+                            <div class="theme-toggle day" id="themeToggle" title="切换主题">
+                                <i class="fas fa-sun"></i>
+                                <i class="fas fa-moon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card primary h-100">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">联系人总数</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalContacts">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card success h-100">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">今日新增</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayContacts">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar-plus fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card warning h-100">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">最近更新</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="recentContacts">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-history fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card info h-100">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">系统状态</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="systemStatus">正常</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-database fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 添加/编辑联系人表单 -->
+            <div class="col-lg-4 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-user-plus me-2"></i>
+                        <span id="formTitle">添加新联系人</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="contactForm">
+                            <input type="hidden" id="contactId">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">姓名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" required>
+                                <div class="invalid-feedback">请输入联系人姓名</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">手机号码 <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="phone" required>
+                                <div class="invalid-feedback">请输入正确的手机号码</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">电子邮箱</label>
+                                <input type="email" class="form-control" id="email">
+                                <div class="invalid-feedback">请输入正确的电子邮箱地址</div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="fas fa-save me-2"></i>保存联系人
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="cancelBtn" style="display: none;">
+                                    <i class="fas fa-times me-2"></i>取消编辑
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 系统信息卡片 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle me-2"></i>系统信息
+                    </div>
+                    <div class="card-body">
+                        <p><strong>数据库:</strong> <span id="dbInfo">MySQL</span></p>
+                        <p><strong>持久化:</strong> <span class="badge bg-success">已启用</span></p>
+                        <p><strong>数据安全:</strong> <span class="badge bg-success">重启不丢失</span></p>
+                        <p><strong>分享功能:</strong> <span class="badge bg-info">已启用</span></p>
+                        <button class="btn btn-outline-primary btn-sm mt-2" id="refreshBtn">
+                            <i class="fas fa-sync-alt me-1"></i>刷新数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 联系人列表 -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                        <div>
+                            <i class="fas fa-list me-2"></i>联系人列表
+                            <span class="badge bg-primary ms-2" id="contactsCount">0</span>
+                        </div>
+                        <div class="search-container" style="width: 250px;">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="搜索联系人..." id="searchInput">
+                                <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <div class="search-results" id="searchResults"></div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="loading" id="loadingContacts">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p class="mt-2">正在加载联系人数据...</p>
+                        </div>
+
+                        <div id="contactsList">
+                            <!-- 联系人列表将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>联系人管理系统 - MySQL持久化版本 &copy; 2023 | 新增联系人分享功能</p>
+        </footer>
+    </div>
+
+    <!-- 分享模态框 -->
+    <div class="modal fade" id="shareModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-share-alt me-2"></i>分享联系人</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>分享链接已生成，有效期至: <strong id="shareExpiresAt"></strong></p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="shareUrlInput" readonly>
+                        <button class="btn btn-outline-secondary" type="button" id="copyShareUrl">
+                            <i class="fas fa-copy"></i> 复制
+                        </button>
+                    </div>
+                    <div class="alert alert-info">
+                        <small><i class="fas fa-info-circle"></i> 此链接将在24小时后自动失效</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <a href="#" target="_blank" class="btn btn-primary" id="viewShareLink">查看分享</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示Toast -->
+    <div class="toast-container">
+        <div class="toast align-items-center text-white bg-success border-0" id="successToast">
+            <div class="d-flex">
+                <div class="toast-body" id="successMessage">操作成功！</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+
+        <div class="toast align-items-center text-white bg-danger border-0" id="errorToast">
+            <div class="d-flex">
+                <div class="toast-body" id="errorMessage">操作失败！</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let contacts = [];
+        let isEditing = false;
+        let currentEditId = null;
+        let isDayTheme = true;
+
+        // DOM 加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            // 初始化组件
+            initToasts();
+
+            // 加载联系人数据
+            loadContacts();
+
+            // 绑定事件监听器
+            document.getElementById('contactForm').addEventListener('submit', handleFormSubmit);
+            document.getElementById('cancelBtn').addEventListener('click', cancelEdit);
+            document.getElementById('refreshBtn').addEventListener('click', loadContacts);
+            document.getElementById('searchBtn').addEventListener('click', handleSearch);
+            document.getElementById('searchInput').addEventListener('keyup', function (event) {
+                if (event.key === 'Enter') {
+                    handleSearch();
+                } else {
+                    // 实时搜索
+                    performSearch(this.value);
+                }
+            });
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+            // 检查系统状态
+            checkSystemStatus();
+
+            // 设置自动刷新
+            setInterval(checkSystemStatus, 30000); // 每30秒检查一次系统状态
+
+            // 初始化主题
+            initTheme();
+        });
+
+        // 初始化Toast消息组件
+        function initToasts() {
+            // 初始化Bootstrap Toast组件
+            const toastElList = [].slice.call(document.querySelectorAll('.toast'));
+            const toastList = toastElList.map(function (toastEl) {
+                return new bootstrap.Toast(toastEl, { delay: 3000 });
+            });
+        }
+
+        // 显示成功消息
+        function showSuccess(message) {
+            document.getElementById('successMessage').textContent = message;
+            const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+            successToast.show();
+        }
+
+        // 显示错误消息
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+            errorToast.show();
+        }
+
+        // 加载联系人列表
+        async function loadContacts() {
+            const loadingEl = document.getElementById('loadingContacts');
+            const contactsListEl = document.getElementById('contactsList');
+
+            // 显示加载状态
+            loadingEl.style.display = 'block';
+            contactsListEl.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/contacts');
+                const result = await response.json();
+
+                if (result.success) {
+                    contacts = result.data;
+                    renderContacts(contacts);
+                    updateStats();
+                } else {
+                    showError('加载联系人失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('加载联系人时出错:', error);
+                showError('无法连接到服务器，请检查网络连接');
+                document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-circle text-danger me-1"></i>连接失败';
+
+                // 显示空状态
+                contactsListEl.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h5>无法加载数据</h5>
+                        <p>请检查后端服务是否正常运行</p>
+                        <button class="btn btn-primary mt-2" onclick="loadContacts()">重试</button>
+                    </div>
+                `;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        // 渲染联系人列表
+        function renderContacts(contactsToRender) {
+            const contactsListEl = document.getElementById('contactsList');
+            document.getElementById('contactsCount').textContent = contactsToRender.length;
+
+            if (contactsToRender.length === 0) {
+                contactsListEl.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-address-book"></i>
+                        <h5>暂无联系人</h5>
+                        <p>点击上方表单添加第一个联系人</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            contactsToRender.forEach(contact => {
+                const createdDate = new Date(contact.created_at).toLocaleDateString('zh-CN');
+                const updatedDate = new Date(contact.updated_at).toLocaleDateString('zh-CN');
+
+                html += `
+                    <div class="contact-item" data-id="${contact.id}">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h6 class="mb-0">${contact.name}</h6>
+                                <small class="text-muted">ID: ${contact.id}</small>
+                            </div>
+                            <div class="col-md-2">
+                                <i class="fas fa-phone me-1 text-muted"></i>
+                                <span>${contact.phone}</span>
+                            </div>
+                            <div class="col-md-3">
+                                <i class="fas fa-envelope me-1 text-muted"></i>
+                                <span>${contact.email || '未填写'}</span>
+                            </div>
+                            <div class="col-md-4 text-end contact-actions">
+                                <button class="btn btn-sm btn-outline-primary btn-action edit-btn" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info btn-action share-btn" title="分享">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger btn-action delete-btn" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar-plus me-1"></i>创建: ${createdDate}
+                                    <i class="fas fa-history ms-2 me-1"></i>更新: ${updatedDate}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            contactsListEl.innerHTML = html;
+
+            // 为编辑、分享和删除按钮添加事件监听器
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const contactItem = this.closest('.contact-item');
+                    const contactId = parseInt(contactItem.dataset.id);
+                    editContact(contactId);
+                });
+            });
+
+            document.querySelectorAll('.share-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const contactItem = this.closest('.contact-item');
+                    const contactId = parseInt(contactItem.dataset.id);
+                    shareContact(contactId);
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const contactItem = this.closest('.contact-item');
+                    const contactId = parseInt(contactItem.dataset.id);
+                    deleteContact(contactId);
+                });
+            });
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            document.getElementById('totalContacts').textContent = contacts.length;
+
+            // 简单统计：今日新增和最近更新
+            const today = new Date().toDateString();
+            const todayContacts = contacts.filter(contact =>
+                new Date(contact.created_at).toDateString() === today
+            ).length;
+
+            const recentContacts = contacts.filter(contact => {
+                const updateDate = new Date(contact.updated_at);
+                const today = new Date();
+                const diffTime = Math.abs(today - updateDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 7; // 最近7天内更新的
+            }).length;
+
+            document.getElementById('todayContacts').textContent = todayContacts;
+            document.getElementById('recentContacts').textContent = recentContacts;
+        }
+
+        // 处理表单提交
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+
+            // 获取表单数据
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                email: document.getElementById('email').value.trim() || null
+            };
+
+            // 简单验证
+            if (!formData.name) {
+                showError('请输入联系人姓名');
+                document.getElementById('name').focus();
+                return;
+            }
+
+            if (!formData.phone || !/^1[3-9]\d{9}$/.test(formData.phone)) {
+                showError('请输入正确的手机号码');
+                document.getElementById('phone').focus();
+                return;
+            }
+
+            if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+                showError('请输入正确的电子邮箱地址');
+                document.getElementById('email').focus();
+                return;
+            }
+
+            try {
+                let response;
+
+                if (isEditing) {
+                    // 更新现有联系人
+                    response = await fetch(`/api/contacts/${currentEditId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                } else {
+                    // 添加新联系人
+                    response = await fetch('/api/contacts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess(isEditing ? '联系人更新成功' : '联系人添加成功');
+                    resetForm();
+                    loadContacts();
+                } else {
+                    showError((isEditing ? '更新' : '添加') + '联系人失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('提交表单时出错:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 编辑联系人
+        function editContact(id) {
+            const contact = contacts.find(c => c.id === id);
+            if (!contact) return;
+
+            // 填充表单
+            document.getElementById('contactId').value = contact.id;
+            document.getElementById('name').value = contact.name;
+            document.getElementById('phone').value = contact.phone;
+            document.getElementById('email').value = contact.email || '';
+
+            // 更新UI状态
+            isEditing = true;
+            currentEditId = id;
+            document.getElementById('formTitle').textContent = '编辑联系人';
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-edit me-2"></i>更新联系人';
+            document.getElementById('cancelBtn').style.display = 'block';
+
+            // 滚动到表单
+            document.getElementById('name').focus();
+        }
+
+        // 取消编辑
+        function cancelEdit() {
+            resetForm();
+        }
+
+        // 重置表单
+        function resetForm() {
+            document.getElementById('contactForm').reset();
+            document.getElementById('contactId').value = '';
+
+            isEditing = false;
+            currentEditId = null;
+            document.getElementById('formTitle').textContent = '添加新联系人';
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save me-2"></i>保存联系人';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        // 删除联系人
+        async function deleteContact(id) {
+            const contact = contacts.find(c => c.id === id);
+            if (!contact) return;
+
+            if (!confirm(`确定要删除联系人 "${contact.name}" 吗？此操作不可撤销。`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/contacts/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('联系人删除成功');
+                    loadContacts();
+
+                    // 如果删除的是当前正在编辑的联系人，重置表单
+                    if (isEditing && currentEditId === id) {
+                        resetForm();
+                    }
+                } else {
+                    showError('删除联系人失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('删除联系人时出错:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 分享联系人
+        async function shareContact(id) {
+            const contact = contacts.find(c => c.id === id);
+            if (!contact) return;
+
+            try {
+                const response = await fetch(`/api/contacts/${id}/share`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 显示分享模态框
+                    const shareUrl = result.data.shareUrl;
+                    const expiresAt = new Date(result.data.expiresAt).toLocaleString('zh-CN');
+
+                    document.getElementById('shareUrlInput').value = shareUrl;
+                    document.getElementById('shareExpiresAt').textContent = expiresAt;
+                    document.getElementById('viewShareLink').href = shareUrl;
+
+                    const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+                    shareModal.show();
+
+                    // 添加复制功能
+                    document.getElementById('copyShareUrl').addEventListener('click', function () {
+                        const shareUrlInput = document.getElementById('shareUrlInput');
+                        shareUrlInput.select();
+                        document.execCommand('copy');
+
+                        // 显示复制成功提示
+                        const originalText = this.innerHTML;
+                        this.innerHTML = '<i class="fas fa-check"></i> 已复制';
+                        this.classList.remove('btn-outline-secondary');
+                        this.classList.add('btn-success');
+
+                        setTimeout(() => {
+                            this.innerHTML = originalText;
+                            this.classList.remove('btn-success');
+                            this.classList.add('btn-outline-secondary');
+                        }, 2000);
+                    });
+
+                    showSuccess('分享链接生成成功');
+                } else {
+                    showError('生成分享链接失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('分享联系人时出错:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 处理搜索
+        function handleSearch() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+
+            if (!searchTerm) {
+                renderContacts(contacts);
+                return;
+            }
+
+            const filteredContacts = contacts.filter(contact =>
+                contact.name.toLowerCase().includes(searchTerm) ||
+                contact.phone.includes(searchTerm) ||
+                (contact.email && contact.email.toLowerCase().includes(searchTerm))
+            );
+
+            renderContacts(filteredContacts);
+        }
+
+        // 实时搜索
+        function performSearch(term) {
+            const searchResults = document.getElementById('searchResults');
+
+            if (!term) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            const filteredContacts = contacts.filter(contact =>
+                contact.name.toLowerCase().includes(term.toLowerCase()) ||
+                contact.phone.includes(term) ||
+                (contact.email && contact.email.toLowerCase().includes(term.toLowerCase()))
+            );
+
+            if (filteredContacts.length === 0) {
+                searchResults.innerHTML = '<div class="search-result-item">未找到匹配的联系人</div>';
+            } else {
+                let html = '';
+                filteredContacts.slice(0, 5).forEach(contact => {
+                    html += `<div class="search-result-item" data-id="${contact.id}">
+                        <strong>${contact.name}</strong> - ${contact.phone}
+                    </div>`;
+                });
+                searchResults.innerHTML = html;
+
+                // 添加点击事件
+                document.querySelectorAll('.search-result-item').forEach(item => {
+                    item.addEventListener('click', function () {
+                        const contactId = parseInt(this.dataset.id);
+                        document.getElementById('searchInput').value = '';
+                        searchResults.style.display = 'none';
+
+                        // 高亮显示匹配的联系人
+                        highlightContact(contactId);
+                    });
+                });
+            }
+
+            searchResults.style.display = 'block';
+        }
+
+        // 高亮显示联系人
+        function highlightContact(id) {
+            // 移除之前的高亮
+            document.querySelectorAll('.contact-item').forEach(item => {
+                item.style.backgroundColor = '';
+            });
+
+            // 高亮当前联系人
+            const contactItem = document.querySelector(`.contact-item[data-id="${id}"]`);
+            if (contactItem) {
+                contactItem.style.backgroundColor = 'var(--primary-color)';
+                contactItem.style.color = 'white';
+                setTimeout(() => {
+                    contactItem.style.backgroundColor = '';
+                    contactItem.style.color = '';
+                }, 2000);
+                contactItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // 检查系统状态
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/health');
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('systemStatus').textContent = '正常';
+                    document.getElementById('systemStatus').className = 'h5 mb-0 font-weight-bold text-success';
+                    document.getElementById('dbInfo').textContent = result.database === '连接正常' ? 'MySQL (连接正常)' : 'MySQL (连接异常)';
+                    document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-circle text-success me-1"></i>已连接';
+                }
+            } catch (error) {
+                document.getElementById('systemStatus').textContent = '异常';
+                document.getElementById('systemStatus').className = 'h5 mb-0 font-weight-bold text-danger';
+                document.getElementById('dbInfo').textContent = 'MySQL (连接异常)';
+                document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-circle text-danger me-1"></i>连接失败';
+            }
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+
+            if (isDayTheme) {
+                // 切换到夜间主题
+                body.classList.remove('day-theme');
+                body.classList.add('night-theme');
+                themeToggle.classList.remove('day');
+                themeToggle.classList.add('night');
+                isDayTheme = false;
+            } else {
+                // 切换到日间主题
+                body.classList.remove('night-theme');
+                body.classList.add('day-theme');
+                themeToggle.classList.remove('night');
+                themeToggle.classList.add('day');
+                isDayTheme = true;
+            }
+
+            // 保存主题偏好
+            localStorage.setItem('isDayTheme', isDayTheme);
+        }
+
+        // 初始化主题
+        function initTheme() {
+            const savedTheme = localStorage.getItem('isDayTheme');
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+
+            if (savedTheme === 'false') {
+                isDayTheme = false;
+                body.classList.remove('day-theme');
+                body.classList.add('night-theme');
+                themeToggle.classList.remove('day');
+                themeToggle.classList.add('night');
+            } else {
+                isDayTheme = true;
+                body.classList.remove('night-theme');
+                body.classList.add('day-theme');
+                themeToggle.classList.remove('night');
+                themeToggle.classList.add('day');
+            }
+        }
+    </script>
+</body>
+
+</html>
